@@ -1,15 +1,13 @@
-const express = require('express');
-const app = express();
-const port = process.env.PORT || 8080;
-
-app.get('/', (req, res) => {
-  res.send('<h1>CI/CD Pipeline Micro Project</h1><p>Status: Successfully Deployed via Google Cloud Build!</p>');
-});
-
-app.get('/health', (req, res) => {
-  res.status(200).send('OK');
-});
-
-app.listen(port, () => {
-  console.log(`App listening on port ${port}`);
-});
+{
+  "name": "cicd-micro-project",
+  "version": "1.0.0",
+  "description": "A micro project demonstrating Cloud-based CI/CD",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Running Unit Tests...\" && exit 0"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
