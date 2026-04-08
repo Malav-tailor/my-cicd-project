@@ -1,0 +1,41 @@
+# AWS CodeBuild Configuration (buildspec.yml)
+# Used by AWS CodePipeline to define the build and deployment preparation steps.
+
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18
+  
+  pre_build:
+    commands:
+      # Step 1 & 2: Continuous Integration - Install and Test
+      - echo "Installing source NPM dependencies..."
+      - npm install
+      - echo "Running unit tests..."
+      - npm test
+      # Authenticate with Amazon Elastic Container Registry (ECR)
+      - echo "Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+  
+  build:
+    commands:
+      # Step 3: Build Automation - Create the Docker image
+      - echo "Build started on `date`"
+      - echo "Building the Docker image..."
+      - docker build -t micro-project-app .
+      - docker tag micro-project-app:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/micro-project-app:$CODEBUILD_RESOLVED_SOURCE_VERSION
+  
+  post_build:
+    commands:
+      # Step 4: Storage - Push image to AWS ECR
+      - echo "Pushing the Docker image to ECR..."
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/micro-project-app:$CODEBUILD_RESOLVED_SOURCE_VERSION
+      # Step 5: Prepare for Deployment (CodeDeploy uses this file to update the service)
+      - echo "Writing image definitions file for AWS ECS/CodeDeploy..."
+      - printf '[{"name":"micro-project-container","imageUri":"%s"}]' $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/micro-project-app:$CODEBUILD_RESOLVED_SOURCE_VERSION > imagedefinitions.json
+
+artifacts:
+  files: 
+    - imagedefinitions.json
